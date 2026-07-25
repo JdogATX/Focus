@@ -33,21 +33,76 @@
 
 *{ box-sizing: border-box; }
 
-html, body{
-  height: 100%;
+html{
+  min-height: 100%;
+  background: var(--ink);
 }
 
+/* Layout note: the page used to be a centered flexbox. When the content
+   grew taller than the viewport, `align-items: center` pushed the top of
+   the panel above the scroll origin, where it could not be reached. Plain
+   block flow with auto margins can't do that. */
 body{
   margin: 0;
   background: var(--ink);
   color: var(--paper);
   font-family: var(--font-ui);
   min-height: 100svh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   position: relative;
   overflow-x: hidden;
+}
+
+/* The scene lives on its own fixed layer rather than on the body's own
+   background. iOS Safari does not honour `background-attachment: fixed`,
+   and sizes such backgrounds to the document instead of the viewport,
+   which stretches the gradients. A fixed layer behaves everywhere. */
+body::before{
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    /* moon glow, high and off to one side */
+    radial-gradient(circle at 78% 12%, rgba(224,168,103,0.13) 0%, rgba(224,168,103,0.05) 22%, transparent 46%),
+    /* raked sand: concentric rings spreading from below the horizon */
+    repeating-radial-gradient(circle at 50% 92%,
+      transparent 0 46px,
+      rgba(237,233,224,0.028) 46px 47px,
+      transparent 47px 96px),
+    /* dusk sky, with a faint green cast low down where the land is */
+    linear-gradient(180deg,
+      #0D1116 0%,
+      #12171E 34%,
+      #161C24 62%,
+      #17201F 88%,
+      #141A18 100%);
+}
+
+/* Distant ridgeline, pinned to the bottom of the viewport. Two layers at
+   different tones so it reads as depth rather than a flat cutout. */
+body::after{
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34vh;
+  min-height: 180px;
+  pointer-events: none;
+  z-index: 0;
+  background-repeat: no-repeat;
+  background-position: bottom center;
+  background-size: 100% 100%, 100% 78%;
+  opacity: 0.85;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 300' preserveAspectRatio='none'%3E%3Cpath d='M0 300 L0 214 C 90 196 150 168 232 176 C 320 185 372 132 470 150 C 556 166 604 128 700 142 C 792 156 852 118 946 138 C 1040 158 1108 140 1200 166 L1200 300 Z' fill='%230A0D11'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 300' preserveAspectRatio='none'%3E%3Cpath d='M0 300 L0 176 C 110 150 168 108 260 122 C 356 136 420 74 512 96 C 600 117 664 66 764 88 C 866 110 928 62 1030 86 C 1116 106 1150 122 1200 132 L1200 300 Z' fill='%23101922' fill-opacity='0.75'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: no-preference){
+  body::after{ transition: opacity .6s ease; }
 }
 
 /* subtle grain so the flat dark field doesn't feel like a slide */
@@ -70,7 +125,12 @@ button{ font-family: inherit; }
 .stage{
   width: 100%;
   max-width: 460px;
-  padding: 2.5rem 1.5rem 3rem;
+  margin: 0 auto;
+  padding:
+    calc(env(safe-area-inset-top, 0px) + 2.25rem)
+    calc(env(safe-area-inset-right, 0px) + 1.25rem)
+    calc(env(safe-area-inset-bottom, 0px) + 3.5rem)
+    calc(env(safe-area-inset-left, 0px) + 1.25rem);
   position: relative;
   z-index: 2;
 }
@@ -113,11 +173,30 @@ button{ font-family: inherit; }
   letter-spacing: 0.02em;
 }
 
+/* The panel sits over the scene like a paper screen — translucent enough
+   that the ridgeline and rings stay faintly visible behind it. */
 .counter-body{
-  background: var(--ink-panel);
-  border: 1px solid var(--ink-line);
-  border-radius: 14px;
+  position: relative;
+  background: rgba(24, 29, 36, 0.82);
+  -webkit-backdrop-filter: blur(10px) saturate(115%);
+  backdrop-filter: blur(10px) saturate(115%);
+  border: 1px solid rgba(200, 155, 92, 0.22);
+  border-radius: 16px;
   padding: 1.75rem 1.5rem 2rem;
+  box-shadow:
+    0 1px 0 rgba(237, 233, 224, 0.05) inset,
+    0 24px 60px -28px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+/* inner hairline, offset slightly — a shoji-frame cue */
+.counter-body::before{
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(200, 155, 92, 0.10);
+  border-radius: 10px;
+  pointer-events: none;
 }
 
 .slider-stack{
@@ -428,8 +507,11 @@ button{ font-family: inherit; }
   margin: 2.4rem 0 2rem;
   padding: 1.4rem 1.6rem;
   border-left: 2px solid var(--brass-dim);
-  background: var(--ink-panel);
-  border-radius: 0 10px 10px 0;
+  background: rgba(24, 29, 36, 0.82);
+  -webkit-backdrop-filter: blur(10px) saturate(115%);
+  backdrop-filter: blur(10px) saturate(115%);
+  border-radius: 0 12px 12px 0;
+  box-shadow: 0 18px 44px -26px rgba(0, 0, 0, 0.8);
   font-family: var(--font-display);
   font-style: italic;
   font-size: 1.05rem;
